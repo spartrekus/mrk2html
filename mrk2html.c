@@ -21,7 +21,7 @@
 
 
 
-int markup_output_format = 2;
+int markup_output_format = 2; //html
 
 ////////////////////////////////////////
 ////////////////////////////////////////
@@ -51,6 +51,45 @@ int  slidebufferfoundsection = 0;
 char slidemysection[PATH_MAX];
 char mygraphicspath[PATH_MAX];
 char myinputspath[PATH_MAX];
+
+
+
+
+
+////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
+char *strgetcol( char *str, int mygivencol )
+{ 
+      char ptr[PATH_MAX];
+      char charo[PATH_MAX];
+      strncpy( ptr, "", PATH_MAX );
+      int i,j=0;   
+      int fdcoll = 0;
+      int fdcolr = 0;
+      for(i=0; str[i]!='\0'; i++)
+      {
+        if ( str[i] == '{' ) 
+           fdcoll++;
+        else if ( str[i] == '}' ) 
+           fdcolr++;
+        else if (str[i] != '\n' && str[i] != '\n') 
+        {
+          snprintf( charo, PATH_MAX , "%c", str[i] );
+          if ( ( mygivencol == 1 ) && ( fdcoll == 1 )  && ( fdcolr == 0 ) )
+           strncat( ptr , charo , PATH_MAX - strlen( ptr ) -1 ); 
+          else if ( ( mygivencol == 2 ) && ( fdcoll == 2 )  && ( fdcolr == 1 ) )
+           strncat( ptr , charo , PATH_MAX - strlen( ptr ) -1 ); 
+        }
+      } 
+      //ptr[j]='\0';
+      size_t siz = sizeof ptr ; 
+      char *r = malloc( sizeof ptr );
+      return r ? memcpy(r, ptr, siz ) : NULL;
+      //char *base = ptr ; 
+      //return (base);
+}
 
 
 
@@ -778,18 +817,20 @@ void nfileunimark( char *fileout, char *filein )
   //int fetchcmdpos=0;
   int foundcmd = 0;
 
+  char inputfield[PATH_MAX];
   char mycurrenttag[PATH_MAX];
   strncpy( mycurrenttag, "", PATH_MAX );
 
 
   int uninewline = 0;
+  int ffilereader = 1;
 
   /////////////////////////////////////////////////
   if ( fexist( filein ) == 1 )
   {
     fp5 = fopen( fileout , "ab");
     fp6 = fopen( filein , "rb");
-    while( !feof(fp6) ) 
+    while(     !feof(fp6)   ) 
     {
           // vars
 	  foundcode = 0; 
@@ -836,6 +877,7 @@ void nfileunimark( char *fileout, char *filein )
 
 
            if ( !feof(fp6) )
+           if ( ffilereader == 1 )
            {
 
             if ( strcmp( fetchcmdline, "" ) == 0 )    uninewline = 1;
@@ -865,6 +907,22 @@ void nfileunimark( char *fileout, char *filein )
             }
 
 
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'e' ) 
+            if ( fetchline[2] == 'n' ) 
+            if ( fetchline[3] == 'd' ) 
+            if ( fetchline[4] == 'd' ) 
+            if ( fetchline[5] == 'o' ) 
+            if ( fetchline[6] == 'c' ) 
+            {
+              ffilereader = 0;
+              printf( "Found enddoc\n" );
+  	      foundcode = 1;
+            }
 
 
 
@@ -928,6 +986,60 @@ void nfileunimark( char *fileout, char *filein )
             }
 
 
+
+            // !url
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '!' )
+            if ( fetchline[1] == 'u' )
+            if ( fetchline[2] == 'r' )
+            if ( fetchline[3] == 'l' )
+            if ( fetchline[4] == '{' )
+            {
+
+                //strncat( slidebufferdata[foxy] , strdelimit( fetchline,  '{' ,'}' ,  2 )   , PATH_MAX - strlen( slidebufferdata[foxy]  ) -1 );
+ 	        fputs( "<a href=\"" , fp5 );
+ 	        fputs( strtrim( strdelimit( fetchline, '{' , '}', 1 )  ) , fp5 ) ;
+  	        fputs( "\">", fp5 );
+  	        fputs( "Link ", fp5 );
+ 	        fputs( strtrim( strdelimit( fetchline, '{' , '}', 2 )  ) , fp5 ) ;
+  	        fputs( "</a>", fp5 );
+  	        fputs( "<br>", fp5 );
+  	        fputs( "\n", fp5 );
+  	      foundcode = 1;
+            }
+            // <a href="https://www.w3schools.com">Visit W3Schools</a>                                                                 
+
+
+            if ( foundcode == 0 ) // !part 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'p' ) 
+            if ( fetchline[2] == 'a' ) 
+            if ( fetchline[3] == 'r' ) 
+            if ( fetchline[4] == 't' ) 
+            if ( fetchline[5] == ' ' ) 
+            {
+ 	        fputs( "<b>" , fp5 );
+ 	        fputs( strcut( fetchline, 5+2, strlen( fetchline )) , fp5 );
+  	        fputs( "</b>", fp5 );
+  	        fputs( "<br>\n", fp5 );
+  	        foundcode = 1;
+            }
+
+            if ( foundcode == 0 )  // !bold 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'b' ) 
+            if ( fetchline[2] == 'o' ) 
+            if ( fetchline[3] == 'l' ) 
+            if ( fetchline[4] == 'd' ) 
+            if ( fetchline[5] == ' ' ) 
+            {
+ 	        fputs( "<b>" , fp5 );
+ 	        fputs( strcut( fetchline, 5+2, strlen( fetchline )) , fp5 );
+  	        fputs( "</b>\n", fp5 );
+  	        foundcode = 1;
+            }
+
+
             /////////////////////////////////////////////////////////////////
             /////////////////////////////////////////////////////////////////
             /////////////////////////////////////////////////////////////////
@@ -977,6 +1089,86 @@ void nfileunimark( char *fileout, char *filein )
             }
 
 
+            //![kittens!](http://placekitten.com/400/500 "Kitten from placekitten.com")
+            // ![]() quick markdown workaround for figs
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '!' ) 
+            if (( fetchline[1] == '[' ) || ( fetchline[1] == '(' ) )
+            if ( strstr( fetchline , ")" ) != 0 ) 
+            if ( strstr( fetchline , "(" ) != 0 ) 
+            {
+  	        //fputs( "\\begin{center}\n", fp5 );
+  	        //fputs( "\\includegraphics[width=1.0\\textwidth]{" , fp5 );
+ 	        //fputs( strtrim( strcut( fetchline, 4+2, strlen(fetchline))) , fp5 );
+                //fputs( strdelimit( fetchline,  '(' ,')' ,  1 ) , fp5 );
+  	        //fputs( "}\n", fp5 );
+  	      //fputs( "\\end{center}\n", fp5 );
+  	      fputs( "<br>\n", fp5 );
+  	      fputs( "<img src=\"", fp5 );
+              //strncpy( inputfield,  strcut( fetchline,  4 +2, strlen( fetchline )), PATH_MAX );
+ 	      //fputs( inputfield , fp5 );
+              fputs( strdelimit( fetchline,  '(' ,')' ,  1 ) , fp5 );
+  	      fputs( "\"><br>\n", fp5 );
+  	      fputs( "<br>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+
+
+
+
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )  // deprecated, but ok, that's too modern
+            if ( fetchline[0] == '#' ) 
+            if ( fetchline[1] == ' ' ) 
+            {
+ 	        fputs( "<h1>" , fp5 );
+ 	        fputs( strcut( fetchline, 1+2, strlen( fetchline )) , fp5 );
+  	        fputs( "</h1>\n", fp5 );
+  	      foundcode = 1;
+            }
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )  // deprecated, but ok, that's too modern
+            if ( fetchline[0] == '#' ) 
+            if ( fetchline[1] == '#' ) 
+            if ( fetchline[2] == ' ' ) 
+            {
+ 	        fputs( "<h2>" , fp5 );
+ 	        fputs( strcut( fetchline, 2+2, strlen( fetchline )) , fp5 );
+  	        fputs( "</h2>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) // deprecated, but ok, that's too modern
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == '=' ) 
+            if ( fetchline[2] == '=' ) 
+            if ( fetchline[3] == ' ' ) 
+            if ( markup_output_format == 2 )
+            {
+ 	        fputs( "<h2>" , fp5 );
+ 	        fputs( strtrim( strcut( fetchline, 3+2, strlen( fetchline ))) , fp5 );
+  	        fputs( "</h2>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+
+
+
+
+
+
             /////////////////////////////////////////////////////////////////
             /////////////////////////////////////////////////////////////////
             /////////////////////////////////////////////////////////////////
@@ -995,29 +1187,163 @@ void nfileunimark( char *fileout, char *filein )
             }
 
 
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'f' ) 
+            if ( fetchline[2] == 'i' ) 
+            if ( fetchline[3] == 'g' ) 
+            if ( fetchline[4] == ' ' ) 
+            if ( markup_output_format == 2 )
+            {
+  	      fputs( "<br>\n", fp5 );
+  	      fputs( "<img src=\"", fp5 );
+              strncpy( inputfield,  strcut( fetchline,  4 +2, strlen( fetchline )), PATH_MAX );
+ 	      fputs( inputfield , fp5 );
+  	      fputs( "\"><br>\n", fp5 );
+  	      fputs( "<br>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'f' ) 
+            if ( fetchline[2] == 'i' ) 
+            if ( fetchline[3] == 'g' ) 
+            if ( fetchline[4] == '{' ) 
+            if ( markup_output_format == 2 )
+            {
+  	      fputs( "<br>\n", fp5 );
+  	      fputs( "<img src=\"", fp5 );
+              strncpy( inputfield, strgetcol( strcut( fetchline,  4-1+2, strlen( fetchline )), 1) , PATH_MAX );
+ 	      fputs( inputfield , fp5 );
+  	      fputs( "\"><br>\n", fp5 );
+  	      fputs( "<br>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '>' ) 
+            if ( fetchline[1] == ' ' ) 
+            if ( markup_output_format == 2 )
+            {
+  	      fputs( "<b>- ", fp5 );
+ 	      fputs( strtrim( strcut( fetchline, 1+2, strlen( fetchline ))) , fp5 );
+  	      fputs( ":</b>", fp5 );
+  	      fputs( "<br>\n", fp5 );
+  	      foundcode = 1;
+            }
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 )
+            if ( fetchline[0] == '-' ) 
+            if ( fetchline[1] == ' ' ) 
+            if ( markup_output_format == 2 )
+            {
+  	      if ( fetchline[strlen(fetchline)] != '.' )
+              {
+  	        fputs( "- ", fp5 );
+ 	        fputs( strtrim( strcut( fetchline, 1+2, strlen( fetchline ))) , fp5 );
+  	        fputs( "<br>", fp5 );
+  	        fputs( "\n", fp5 );
+              }
+              else
+              {
+ 	        fputs( strtrim( strcut( fetchline, 1+2, strlen( fetchline ))) , fp5 );
+  	        fputs( "<br>", fp5 );
+  	        fputs( "\n", fp5 );
+              }
+  	      foundcode = 1;
+            }
+
+
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'b' ) 
+            if ( fetchline[2] == 'e' ) 
+            if ( fetchline[3] == 'g' ) 
+            if ( fetchline[4] == 'i' ) 
+            if ( fetchline[5] == 'n' ) 
+            if ( markup_output_format == 2 )
+            {
+                 /// make file 
+  	         foundcode = 1;
+            }
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'b' ) 
+            if ( fetchline[2] == 'i' ) 
+            if ( fetchline[3] == 'g' ) 
+            if ( fetchline[4] == 's' ) 
+            if ( fetchline[5] == 'k' ) 
+            if ( fetchline[6] == 'i' ) 
+            if ( fetchline[7] == 'p' ) 
+            if ( markup_output_format == 2 )
+            {
+  	         foundcode = 1;
+            }
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'c' ) 
+            if ( fetchline[2] == 'l' ) 
+            if ( fetchline[3] == 'r' ) 
+            if ( markup_output_format == 2 )
+            {
+  	         foundcode = 1;
+            }
+
+
+
+            /////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////
+            if ( foundcode == 0 ) 
+            if ( fetchline[0] == '!' ) 
+            if ( fetchline[1] == 'l' ) 
+            if ( fetchline[2] == 'f' ) 
+            {
+  	         fputs( "<br>", fp5 );
+  	         foundcode = 1;
+            }
+
 
 
             /////////////////////////////
 	    if ( foundcode == 0 )
 	    {
-	        if ( beginitemize == 1 )
-		{
+	        //if ( beginitemize == 1 )
+		//{
 		  //fputs( "\\iexitemend\n" , fp5 ); 
 		  //fputs( "\n" , fp5 ); 
-		}
+		//}
  	        fputs( fetchline , fp5 );
-
-                if ( markup_output_format == 2 )
-                 if ( foundcode == 0 )
-                 {
-                    //if ( uninewline == 1 )
- 	            fputs( "<br>" , fp5 );
-  	            fputs( "\n", fp5 );
-                 }
-
+  	        fputs( "\n", fp5 );
+                //if ( markup_output_format == 2 )
+                // if ( foundcode == 0 )
+                //{
+                //if ( uninewline == 1 )
+ 	        //   fputs( "<br>" , fp5 );
+                // }
  	        //fputs( "<br>" , fp5 );
   	        //fputs( "\n", fp5 );
-
 	        beginitemize = 0;
             }
 
@@ -1082,7 +1408,6 @@ void show_unimark_logo()
 
 
 ////////////////////////////////
-/// check for enddoc 
 ////////////////////////////////
 int cat_fdinfo( char *filein )
 {
@@ -1137,10 +1462,6 @@ int main( int argc, char *argv[])
     FILE *fpout;
 
 
-
-
-
-
     /////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////
     printf("================= \n");
@@ -1164,10 +1485,10 @@ int main( int argc, char *argv[])
           printf( "Target: %s\n" , targetfile );
           printf("  >SRC: %s => TRG: %s \n", argv[1] , targetfile  );
           filenew( targetfile );
-          fileappendfontbegin( targetfile );
+          //fileappendfontbegin( targetfile );
           nfileunimark( targetfile , argv[1] );
-          fileappendfontend( targetfile );
-          fileappendend( targetfile );
+          //fileappendfontend( targetfile );
+          //fileappendend( targetfile );
           return 0;
       }
 
@@ -1186,4 +1507,18 @@ int main( int argc, char *argv[])
 
 
 
+/*
+TML <a> tag                                                                                                          
+                                                                                                                           
+  Example                                                                                                                  
+                                                                                                                           
+   The href attribute specifies the link's destination:                                                                    
+                                                                                                                           
+   <a href="https://www.w3schools.com">Visit W3Schools</a>                                                                 
+   Try it Yourself »                                                                                                       
+                                                                                                                           
+   More "Try it Yourself" examples below.                                                                                  
+                                                                                                                           
+     ----------------------------
+*/
 
